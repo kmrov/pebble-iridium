@@ -57,10 +57,10 @@ function locationSuccess(pos) {
               "&lng=" + pos.coords.longitude + "&alt=150&tz=UCT";
 
     xhrRequest(url, 'GET', 
-    function(responseText) {
-        flares = parseIridiumFlares(responseText);
-        sendFlare(0);
-    }      
+        function(responseText) {
+            flares = parseIridiumFlares(responseText);
+            sendFlare(0);
+        }
     );
 }
 
