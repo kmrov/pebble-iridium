@@ -37,6 +37,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
         switch(t->key) {
             case KEY_NUM:
                 num = (int) t->value->int32;
+            break;
             case KEY_IRIDIUM_TIME:
                 iridium_time = t->value->int32;
                 strftime(time_buffer, sizeof(time_buffer), "%H:%M:%S", localtime(&iridium_time));
