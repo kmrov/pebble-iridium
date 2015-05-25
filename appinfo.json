@@ -1,0 +1,22 @@
+{
+    "uuid": "5cc85235-bc09-44fd-94a1-1b47def95b85",
+    "shortName": "pebble-iridium",
+    "longName": "pebble-iridium",
+    "companyName": "induktive",
+    "versionLabel": "1.0",
+    "sdkVersion": "3",
+    "targetPlatforms": ["aplite", "basalt"],
+    "watchapp": {
+        "watchface": true
+    },
+    "capabilities": ["location"],
+    "appKeys": {
+        "KEY_NUM": 0,
+        "KEY_IRIDIUM_TIME": 1,
+        "KEY_IRIDIUM_BRIGHTNESS": 2,
+        "KEY_IRIDIUM_AZIMUTH": 3
+    },
+    "resources": {
+        "media": []
+    }
+}
