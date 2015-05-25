@@ -1,5 +1,8 @@
 #include <pebble.h>
 
+static void second_handler(struct tm *tick_time, TimeUnits units_changed);
+static void minute_handler(struct tm *tick_time, TimeUnits units_changed);
+
 #define KEY_NUM 0
 #define KEY_IRIDIUM_TIME 1
 #define KEY_IRIDIUM_BRIGHTNESS 2
@@ -8,6 +11,8 @@
 static Window *s_main_window;
 
 static TextLayer *s_time_layer;
+
+static TextLayer *s_countdown_layer;
 
 static TextLayer *s_iridium_layers[4];
 
@@ -87,8 +92,16 @@ static void main_window_load(Window *window) {
     text_layer_set_text_color(s_time_layer, GColorWhite);
     text_layer_set_text(s_time_layer, "00:00");
 
-    text_layer_set_font(s_time_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
+    text_layer_set_font(s_time_layer, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
     text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
+
+    s_countdown_layer = text_layer_create(GRect(0, 38, 144, 50));
+    text_layer_set_background_color(s_countdown_layer, GColorClear);
+    text_layer_set_text_color(s_countdown_layer, GColorWhite);
+    text_layer_set_text(s_countdown_layer, "");
+
+    text_layer_set_font(s_countdown_layer, fonts_get_system_font(FONT_KEY_GOTHIC_28));
+    text_layer_set_text_alignment(s_countdown_layer, GTextAlignmentCenter);
 
     for (int i=0; i<4; i++) {
         s_iridium_layers[i] = text_layer_create(GRect(0, 72+(22*i), 144, 22));
@@ -100,6 +113,7 @@ static void main_window_load(Window *window) {
     text_layer_set_text(s_iridium_layers[0], "Loading...");
 
     layer_add_child(window_get_root_layer(window), text_layer_get_layer(s_time_layer));
+    layer_add_child(window_get_root_layer(window), text_layer_get_layer(s_countdown_layer));
 
     for (int i=0; i<4; i++) {
         layer_add_child(window_get_root_layer(window), text_layer_get_layer(s_iridium_layers[i]));
@@ -119,26 +133,62 @@ static void update_iridium() {
 }
 
 static void update_time() {
-    time_t timestamp = time(NULL); 
+    time_t timestamp = time(NULL);
     struct tm *tick_time = localtime(&timestamp);
-
-    if (flares_present && ((timestamp > flares[0].time) || (tick_time->tm_min == 0))) {
-        update_iridium();
-    }
 
     static char buffer[] = "00:00";
 
     if(clock_is_24h_style() == true) {
-        strftime(buffer, sizeof("00:00"), "%H:%M", tick_time);
+        strftime(buffer, sizeof(buffer), "%H:%M", tick_time);
     } else {
-        strftime(buffer, sizeof("00:00"), "%I:%M", tick_time);
+        strftime(buffer, sizeof(buffer), "%I:%M", tick_time);
     }
 
     text_layer_set_text(s_time_layer, buffer);
 }
 
-static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
+static void second_handler(struct tm *tick_time, TimeUnits units_changed) {
+    time_t timestamp = time(NULL);
+    time_t diff = flares[0].time - timestamp;
+    static char buffer[] = "-00:00";
+
+    if (tick_time->tm_sec == 0) {
+        update_time();
+    }
+
+    if (diff < 0)
+    {
+        text_layer_set_text(s_countdown_layer, "");
+        tick_timer_service_subscribe(MINUTE_UNIT, minute_handler);
+    }
+    else
+    {
+        strftime(buffer, sizeof(buffer), "%M:%S", localtime(&diff));
+        text_layer_set_text(s_countdown_layer, buffer);
+        if (diff == 10)
+        {
+            vibes_double_pulse();
+        }
+    }
+}
+
+static void minute_handler(struct tm *tick_time, TimeUnits units_changed) {
+    time_t timestamp = time(NULL);
+    time_t diff = flares[0].time - timestamp;
+
     update_time();
+
+    if (flares_present) {
+        if ((timestamp > flares[0].time) || (tick_time->tm_min == 0)) {
+            update_iridium();
+        }
+
+        if ((flares[0].time - timestamp < 60*5) && (flares[0].time - timestamp > 0))
+        {
+            tick_timer_service_subscribe(SECOND_UNIT, second_handler);
+            vibes_double_pulse();
+        }
+    }
 }
 
 static void main_window_unload(Window *window) {
@@ -160,7 +210,7 @@ static void init() {
 
     update_time();
 
-    tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
+    tick_timer_service_subscribe(MINUTE_UNIT, minute_handler);
 
     app_message_register_inbox_received(inbox_received_callback);
     app_message_register_inbox_dropped(inbox_dropped_callback);
