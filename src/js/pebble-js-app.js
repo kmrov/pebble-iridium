@@ -54,7 +54,7 @@ function parseIridiumFlares(str) {
 
 function locationSuccess(pos) {
     var url = "http://www.heavens-above.com/IridiumFlares.aspx?lat=" + pos.coords.latitude +
-              "&lng=" + pos.coords.longitude + "&alt=150&tz=GMT";
+              "&lng=" + pos.coords.longitude + "&alt=150&tz=UCT";
 
     xhrRequest(url, 'GET', 
     function(responseText) {
