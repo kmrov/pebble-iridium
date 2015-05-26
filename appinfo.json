@@ -3,7 +3,7 @@
     "shortName": "pebble-iridium",
     "longName": "pebble-iridium",
     "companyName": "induktive",
-    "versionLabel": "1.0",
+    "versionLabel": "0.1",
     "sdkVersion": "3",
     "targetPlatforms": ["aplite", "basalt"],
     "watchapp": {
