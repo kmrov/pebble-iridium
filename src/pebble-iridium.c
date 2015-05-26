@@ -174,7 +174,6 @@ static void second_handler(struct tm *tick_time, TimeUnits units_changed) {
 
 static void minute_handler(struct tm *tick_time, TimeUnits units_changed) {
     time_t timestamp = time(NULL);
-    time_t diff = flares[0].time - timestamp;
 
     update_time();
 
@@ -196,6 +195,7 @@ static void main_window_unload(Window *window) {
         text_layer_destroy(s_iridium_layers[i]);
     }
     text_layer_destroy(s_time_layer);
+    text_layer_destroy(s_countdown_layer);
 }
 
 static void init() {
