@@ -92,7 +92,7 @@ static void main_window_load(Window *window) {
     text_layer_set_text_color(s_time_layer, GColorWhite);
     text_layer_set_text(s_time_layer, "00:00");
 
-    text_layer_set_font(s_time_layer, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
+    text_layer_set_font(s_time_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
     text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
 
     s_countdown_layer = text_layer_create(GRect(0, 38, 144, 50));
@@ -159,11 +159,19 @@ static void second_handler(struct tm *tick_time, TimeUnits units_changed) {
     if (diff < 0)
     {
         text_layer_set_text(s_countdown_layer, "");
+        text_layer_set_font(s_time_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
         tick_timer_service_subscribe(MINUTE_UNIT, minute_handler);
     }
     else
     {
-        strftime(buffer, sizeof(buffer), "%M:%S", localtime(&diff));
+        if (diff == 0)
+        {
+            strcpy(buffer, "00:00");
+        }
+        else
+        {
+            strftime(buffer, sizeof(buffer), "-%M:%S", localtime(&diff));
+        }
         text_layer_set_text(s_countdown_layer, buffer);
         if (diff == 10)
         {
@@ -185,6 +193,7 @@ static void minute_handler(struct tm *tick_time, TimeUnits units_changed) {
         if ((flares[0].time - timestamp < 60*5) && (flares[0].time - timestamp > 0))
         {
             tick_timer_service_subscribe(SECOND_UNIT, second_handler);
+            text_layer_set_font(s_time_layer, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
             vibes_double_pulse();
         }
     }
