@@ -35,7 +35,7 @@ function sendFlare(num) {
 
 }
 
-function parseIridiumFlares(str) {
+function parseFlares(str) {
     var re = /<a href=\"flaredetails.aspx.+?">(.+?)<\/a><\/td><td align="center">(.+?)<\/td><td align="center">.+?<\/td><td align="center">(\d+).+?<\/td>/g;
     var flares = [];
     while ((res = re.exec(str)) != null) {
@@ -58,7 +58,7 @@ function locationSuccess(pos) {
 
     xhrRequest(url, 'GET', 
         function(responseText) {
-            flares = parseIridiumFlares(responseText);
+            flares = parseFlares(responseText);
             sendFlare(0);
         }
     );
@@ -68,7 +68,7 @@ function locationError(err) {
     console.log('Error requesting location!');
 }
 
-function getIridium() {
+function getFlares() {
     navigator.geolocation.getCurrentPosition(
         locationSuccess,
         locationError,
@@ -80,13 +80,13 @@ function getIridium() {
 Pebble.addEventListener('ready', 
     function(e) {
         console.log('PebbleKit JS ready! ' + Date());
-        getIridium();
+        getFlares();
     }
 );
 
 Pebble.addEventListener('appmessage',
     function(e) {
         console.log('AppMessage received!');
-        getIridium();
-    }                     
+        getFlares();
+    }
 );
