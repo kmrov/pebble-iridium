@@ -16,6 +16,15 @@ static TextLayer *s_countdown_layer;
 
 static TextLayer *s_iridium_layers[4];
 
+static TextLayer *s_path_layer;
+
+static GPath *s_needle;
+
+static const GPathInfo NEEDLE_POINTS = { 
+  .num_points = 2,
+  .points = (GPoint[]) { { 0, 0 }, { 0, -36 } }
+};
+
 struct flare {
     time_t time;
     char brightness[8];
@@ -83,9 +92,25 @@ static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
     APP_LOG(APP_LOG_LEVEL_INFO, "Outbox send success!");
 }
 
+static void path_layer_update_callback(Layer *path, GContext *ctx) {
+  gpath_draw_outline(ctx, s_needle);
+  GRect bounds = layer_get_frame(path);
+  GPoint path_center = GPoint(bounds.size.w / 2, bounds.size.h / 2);
+  graphics_fill_circle(ctx, path_center, 3);
+}
 
 static void main_window_load(Window *window) {
     window_set_background_color(window, GColorBlack);
+
+  Layer *window_layer = window_get_root_layer(window);
+  GRect bounds = layer_get_frame(window_layer);
+  s_path_layer = layer_create(bounds);
+  layer_set_update_proc(s_path_layer, path_layer_update_callback);
+  layer_add_child(window_layer, s_path_layer);
+  s_needle = gpath_create(&NEEDLE_POINTS);
+  GPoint center = GPoint(bounds.size.w / 2, bounds.size.h / 2);
+  gpath_move_to(s_needle, center);
+
 
     s_time_layer = text_layer_create(GRect(0, 4, 144, 50));
     text_layer_set_background_color(s_time_layer, GColorClear);
@@ -147,6 +172,10 @@ static void update_time() {
     text_layer_set_text(s_time_layer, buffer);
 }
 
+static void compass_heading_handler(CompassHeadingData heading_data) {
+
+}
+
 static void second_handler(struct tm *tick_time, TimeUnits units_changed) {
     time_t timestamp = time(NULL);
     time_t diff = flares[0].time - timestamp;
@@ -161,6 +190,7 @@ static void second_handler(struct tm *tick_time, TimeUnits units_changed) {
         text_layer_set_text(s_countdown_layer, "");
         text_layer_set_font(s_time_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
         tick_timer_service_subscribe(MINUTE_UNIT, minute_handler);
+        compass_service_unsubscribe();
     }
     else
     {
@@ -195,6 +225,8 @@ static void minute_handler(struct tm *tick_time, TimeUnits units_changed) {
             tick_timer_service_subscribe(SECOND_UNIT, second_handler);
             text_layer_set_font(s_time_layer, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
             vibes_double_pulse();
+            compass_service_set_heading_filter(2 * (TRIG_MAX_ANGLE / 360));
+            compass_service_subscribe(&compass_heading_handler);
         }
     }
 }
@@ -205,6 +237,9 @@ static void main_window_unload(Window *window) {
     }
     text_layer_destroy(s_time_layer);
     text_layer_destroy(s_countdown_layer);
+  gpath_destroy(s_needle);
+  layer_destroy(s_path_layer);
+
 }
 
 static void init() {
