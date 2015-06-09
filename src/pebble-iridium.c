@@ -12,6 +12,8 @@ static Window *s_main_window;
 
 static TextLayer *s_time_layer;
 
+static TextLayer *s_date_layer;
+
 static TextLayer *s_countdown_layer;
 
 static TextLayer *s_iridium_layers[4];
@@ -95,6 +97,14 @@ static void main_window_load(Window *window) {
     text_layer_set_font(s_time_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
     text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
 
+    s_date_layer = text_layer_create(GRect(0, 52, 144, 16));
+    text_layer_set_background_color(s_date_layer, GColorClear);
+    text_layer_set_text_color(s_date_layer, GColorWhite);
+    text_layer_set_text(s_date_layer, "Xxx, xxx 00");
+
+    text_layer_set_font(s_date_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
+    text_layer_set_text_alignment(s_date_layer, GTextAlignmentCenter);
+
     s_countdown_layer = text_layer_create(GRect(0, 38, 144, 50));
     text_layer_set_background_color(s_countdown_layer, GColorClear);
     text_layer_set_text_color(s_countdown_layer, GColorWhite);
@@ -113,6 +123,7 @@ static void main_window_load(Window *window) {
     text_layer_set_text(s_iridium_layers[0], "Loading...");
 
     layer_add_child(window_get_root_layer(window), text_layer_get_layer(s_time_layer));
+    layer_add_child(window_get_root_layer(window), text_layer_get_layer(s_date_layer));
     layer_add_child(window_get_root_layer(window), text_layer_get_layer(s_countdown_layer));
 
     for (int i=0; i<4; i++) {
@@ -147,6 +158,15 @@ static void update_time() {
     text_layer_set_text(s_time_layer, buffer);
 }
 
+static void update_date() {
+    time_t timestamp = time(NULL);
+    struct tm *tick_time = localtime(&timestamp);
+    static char buffer[] = "Xxx, xxx 00";
+
+    strftime(buffer, sizeof(buffer), "%a, %b %d", tick_time);
+    text_layer_set_text(s_date_layer, buffer);
+}
+
 static void second_handler(struct tm *tick_time, TimeUnits units_changed) {
     time_t timestamp = time(NULL);
     time_t diff = flares[0].time - timestamp;
@@ -161,6 +181,7 @@ static void second_handler(struct tm *tick_time, TimeUnits units_changed) {
         text_layer_set_text(s_countdown_layer, "");
         text_layer_set_font(s_time_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
         tick_timer_service_subscribe(MINUTE_UNIT, minute_handler);
+        update_date();
     }
     else
     {
@@ -184,6 +205,7 @@ static void minute_handler(struct tm *tick_time, TimeUnits units_changed) {
     time_t timestamp = time(NULL);
 
     update_time();
+    update_date();
 
     if (flares_present) {
         if ((timestamp > flares[0].time) || (tick_time->tm_min == 0)) {
@@ -192,6 +214,7 @@ static void minute_handler(struct tm *tick_time, TimeUnits units_changed) {
 
         if ((flares[0].time - timestamp < 60*5) && (flares[0].time - timestamp > 0))
         {
+            text_layer_set_text(s_date_layer, "");
             tick_timer_service_subscribe(SECOND_UNIT, second_handler);
             text_layer_set_font(s_time_layer, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
             vibes_double_pulse();
@@ -218,6 +241,7 @@ static void init() {
     window_stack_push(s_main_window, true);
 
     update_time();
+    update_date();
 
     tick_timer_service_subscribe(MINUTE_UNIT, minute_handler);
 
